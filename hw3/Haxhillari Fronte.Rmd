@@ -1,0 +1,514 @@
+---
+title: "SDS HOMEWORK 2"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r}
+#importing library
+library(network)
+library(ggplot2)
+library(ggnetwork)
+library(igraph)
+library(sna)
+library(poweRlaw)
+```
+#EXCERCISE 2
+
+```{r}
+#Creating the network type1 
+M=4
+p_values=c()
+par(mfrow=c(2,3))
+
+for(i in 1:M){
+  net=graph.ring(4, directed = TRUE)
+  #net=graph.empty(n=4)
+  #add.edges(net, c(1,2, 2,3, 3,4, 4,1))
+  nodes = c(1,2,3,4)
+  in_degree = c(1,1,1,1)
+  paths=c("unif", "prefattach")
+  for (i in 5:1000){
+    c = sample(paths, size = 1, replace = TRUE)
+    if(c == "unif"){
+      point = sample(nodes, size = 1, replace = TRUE)
+      net<-add.vertices(net, 1)
+      net<-add.edges(net, c(i,point))
+      in_degree[point] = in_degree[point] + 1
+      in_degree[i] = 1
+      nodes[i] = i
+    }
+    if(c=="prefattach"){
+      point=sample(nodes, size=1, prob=in_degree/sum(in_degree))
+      net<-add.vertices(net, 1)
+      net<-add.edges(net, c(i,point))
+      in_degree[point] = in_degree[point] + 1
+      in_degree[i] = 1
+      nodes[i] = i
+    }
+  }
+  # generating the sample space under poisson distribution, lambda setted to the mean(in_degree)
+  y=1:100
+  
+  # first plot: degree distribution (blue) and the pmf of the values of Poisson before generated in a NON log-log plot
+  plot(degree_distribution(net, cumulative = TRUE), type="l", col="blue", main="NOT LOG-LOG", xlab="X", ylab="Y", lwd=2)
+  lines(y, dpois(y, lambda=mean(in_degree), log = FALSE), col="green")
+  lines(y, dpldis(y, xmin=1, alpha=fit_power_law(in_degree)$alpha), col="red")
+  legend("topright", c("degree", "poisson", "plaw"), col=c("blue", "green", "red"), lwd=2)
+  
+  # second plot: degree distribution (blue) and the pmf of the values of Poisson distro in a log-log plot
+  plot(degree_distribution(net, cumulative = TRUE), type="l", log="xy", col="blue", main="LOG-LOG", xlab="X", ylab="Y", lwd=2)
+  lines(y, dpois(y, lambda=mean(in_degree), log = FALSE), col="green")
+  lines(y, dpldis(y, xmin=1, alpha=fit_power_law(in_degree)$alpha), col="red")
+  legend("topright", c("degree", "poisson", "plaw"), col=c("blue", "green", "red"), lwd=2)
+  
+  #third plot: n. of verices for each deegree (not in log-log plot)
+  hist(in_degree)
+  
+  p_values=c(p_values, fit_power_law(in_degree)$KS.p)
+}
+
+
+```
+
+
+
+```{r}
+# plotting an example of network type 1
+ggplot(ggnetwork(net, arrow.gap = 0, layout = "fruchtermanreingold"),
+       aes(x, y, xend = xend, yend = yend)) +
+  geom_edges(
+    aes(color = "EDGE"),
+    alpha = 0.6,
+    curvature = 0.05) +
+  geom_nodes(aes(color = "NODE"),
+             size = 2) +
+  scale_color_brewer("Employment Type",
+                     palette = "Set1") +
+  theme_blank() +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#VERIFY OF THE TRUE DISTRIBUTION OF THE DEGREE DISTRIBUTION.
+
+#For this purpose we rely on the fit_power_law() method given by the package igraph. In particular we will look at 
+#the value KS.p given by the method. That value goes from 0 to 1 and, following the definition provided by the 
+#igraph package page represent : "Numeric scalar, the p-value of the Kolmogorov-Smirnov test. Small p-values (less than 0.05) indicate that the test rejected the hypothesis that the original data could have been drawn from the fitted power-law distribution."
+#Said this, we are going to take a look to p_values of each degree distribution to see whether it follows a power law
+#distribution or not.
+
+for (i in p_values){
+  if (i>=0.05){
+    print("Power Law Distribution")
+  }
+  else{
+    print("Probably Poisson Distribution")
+  }
+}
+```
+
+#EXCERCISE 3
+
+```{r}
+#Creating the network type2
+M=4
+p_values2=c()
+par(mfrow=c(2,3))
+for(i in 1:M){
+  net2=graph.ring(4, directed = TRUE)
+  nodes2 = c(1,2,3,4)
+  in_degree2 = c(1,1,1,1)
+  paths=c("unif", "prefattach")
+  for (i in 5:1000){
+    c = sample(paths, size = 1, replace = TRUE)
+    if(c == "unif"){
+      net2<-add.vertices(net2, 1)
+      point = sample(nodes2, size = 1, replace = TRUE)
+      net2<-add.edges(net2, c(i,point))
+      in_degree2[point] = in_degree2[point] + 1
+      point = sample(nodes2, size = 1, replace = TRUE)
+      net2<-add.edges(net2, c(i,point))
+      in_degree2[point] = in_degree2[point] + 1
+      point = sample(nodes2, size = 1, replace = TRUE)
+      net2<-add.edges(net2, c(i,point))
+      in_degree2[point] = in_degree2[point] + 1
+      in_degree2[i] = 1
+      nodes2[i] = i
+    }
+    if(c=="prefattach"){
+      net2<-add.vertices(net2, 1)
+      point=sample(nodes2, size=1, prob=in_degree2/sum(in_degree2))
+      net2<-add.edges(net2, c(i,point))
+      in_degree2[point] = in_degree2[point] + 1
+      point=sample(nodes2, size=1, prob=in_degree2/sum(in_degree2))
+      net2<-add.edges(net2, c(i,point))
+      in_degree2[point] = in_degree2[point] + 1
+      point=sample(nodes2, size=1, prob=in_degree2/sum(in_degree2))
+      net2<-add.edges(net2, c(i,point))
+      in_degree2[point] = in_degree2[point] + 1
+      in_degree2[i] = 1
+      nodes2[i] = i
+      
+    }
+  }
+  # generating the sample space under poisson distribution, lambda setted to the mean(in_degree)
+  y=1:100
+  
+  # first plot: degree distribution (blue) and the pmf of the values of Poisson before generated in a NON log-log plot
+  plot(degree_distribution(net2, cumulative = TRUE), type="l", col="blue", main="NOT LOG-LOG", xlab="X", ylab="Y", lwd=2)
+  lines(y, dpois(y, lambda=mean(in_degree2), log = FALSE), col="green")
+  lines(y, dpldis(y, xmin=1, alpha=fit_power_law(in_degree2)$alpha), col="red")
+  legend("topright", c("degree", "poisson", "plaw"), col=c("blue", "green", "red"), lwd=2)
+  
+  # second plot: degree distribution (blue) and the pmf of the values of Poisson distro in a log-log plot
+  plot(degree_distribution(net2, cumulative = TRUE), type="l", log="xy", col="blue", main="LOG-LOG", xlab="X", ylab="Y", lwd=2)
+  lines(y, dpois(y, lambda=mean(in_degree2), log = FALSE), col="green")
+  lines(y, dpldis(y, xmin=1, alpha=fit_power_law(in_degree2)$alpha), col="red")
+  legend("topright", c("degree", "poisson", "plaw"), col=c("blue", "green", "red"), lwd=2)
+  
+  #third plot: n. of verices for each deegree (not in log-log plot)
+  hist(in_degree2)
+  
+  p_values2=c(p_values2, fit_power_law(in_degree2)$KS.p)
+}
+
+
+```
+
+
+```{r}
+ggplot(ggnetwork(net2, arrow.gap = 0, layout = "fruchtermanreingold"),
+       aes(x, y, xend = xend, yend = yend)) +
+  geom_edges(
+    aes(color = "EDGE"),
+    alpha = 0.4,
+    curvature = 0.05) +
+  geom_nodes(aes(color = "NODE"),
+             size = 1) +
+  scale_color_brewer("Employment Type",
+                     palette = "Set1") +
+  theme_blank() +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#VERIFY OF THE TRUE DISTRIBUTION OF THE DEGREE DISTRIBUTION.
+#For this purpose we rely on the fit_power_law() method given by the package igraph. In particular we will look at 
+#the value KS.p given by the method. That value goes from 0 to 1 and, following the definition provided by the 
+#igraph package page represent : "Numeric scalar, the p-value of the Kolmogorov-Smirnov test. Small p-values (less than 0.05) indicate that the test rejected the hypothesis that the original data could have been drawn from the fitted power-law distribution."
+#Said this, we are going to take a look to p_values of each degree distribution to see whether it follows a power law
+#distribution or not.
+
+for (i in p_values2){
+  if (i>=0.05){
+    print("Power Law Distribution")
+  }
+  else{
+    print("Probably Poisson Distribution")
+  }
+}
+
+```
+
+#EXCERCISE 4
+
+```{r echo = FALSE}
+#Install and load necessary packages
+
+#install.packages("tm") # for text mining
+#install.packages("SnowballC") # for text stemming
+#install.packages("wordcloud") # word-cloud generator 
+#install.packages("RColorBrewer") # color palettes
+#install.packages("corpus")
+library("tm")
+library("SnowballC")
+library("wordcloud")
+library("RColorBrewer")
+
+
+```
+
+# ZIPF'S LAW
+
+During the times, people have always done a lot of research in order to understand how nature works. They have studied natural phenomena, trying to figure out patterns in order to always get a better understanding of how everything works. Even though most of the times the 'whys?' remain unknown, people have discovered a lot of patterns regarding to different phenomenae. One of those, is what Geroge Zipf popularized, "The Zipf's Law". Even though it vaunts a much considerable empirical support, Zipf’s Law still remains one of the least understood phenomena in mathematical linguistics. It states that, given a bag of N word tokens, arranging them in order of descending token frequency, the plot of log frequencies against log ranks shows, for growing number of N, an always reasonably linear relation. With the power of computer tools, such as R, we can elaborate data in order to extract information and see the tendencies. Here are some examples:
+
+
+
+```{r echo=FALSE}
+get_results <- function(text){
+  docs <- Corpus(VectorSource(text))
+#Text transformation and cleaning like removing white spaces,numbers etc.
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+docs <- tm_map(docs, toSpace, "/")
+docs <- tm_map(docs, toSpace, "@")
+docs <- tm_map(docs, toSpace, "\\|")
+# Convert the text to lower case
+docs <- tm_map(docs, content_transformer(tolower))
+# Remove numbers
+docs <- tm_map(docs, removeNumbers)
+# Remove punctuations
+docs <- tm_map(docs, removePunctuation)
+# Eliminate extra white spaces
+docs <- tm_map(docs, stripWhitespace)
+dtm <- TermDocumentMatrix(docs)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+#assigning the ranks
+zipf<- cbind(d, Rank=1:nrow(d), per=100*d$freq/sum(d$freq))
+#Rank-Frequncy plot 
+plot(zipf$Rank,zipf$freq, xlab="Rank", ylab="Frequency",log="x")
+#Word Cloud
+wordcloud(words = zipf$word, freq = d$freq, min.freq = 1, max.words=200, 
+random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+
+}
+```
+
+```{r echo = FALSE}
+hf = "You don’t know about me, without you have read a book by the
+name of The Adventures of Tom Sawyer; but that ain’t no matter. That
+book was made by Mr. Mark Twain, and he told the truth, mainly.
+There was things which he stretched, but mainly he told the truth.
+That is nothing. I never seen anybody but lied one time or another,
+without it was Aunt Polly, or the widow, or maybe Mary. Aunt
+Polly—Tom’s Aunt Polly, she is—and Mary, and the Widow Douglas
+is all told about in that book, which is mostly a true book, with some
+stretchers, as I said before.
+Now the way that the book winds up is this: Tom and me found
+the money that the robbers hid in the cave, and it made us rich. We
+got six thousand dollars apiece—all gold. It was an awful sight of
+money when it was piled up. Well, Judge Thatcher he took it and put
+it out at interest, and it fetched us a dollar a day apiece all the year
+round—more than a body could tell what to do with. The Widow
+Douglas she took me for her son, and allowed she would sivilize me;
+but it was rough living in the house all the time, considering how dismal
+regular and decent the widow was in all her ways; and so when I
+couldn’t stand it no longer I lit out. I got into my old rags and my
+sugar-hogshead again, and was free and satisfied. But Tom Sawyer he
+hunted me up and said he was going to start a band of robbers, and
+I might join if I would go back to the widow and be respectable. So
+I went back.
+The widow she cried over me, and called me a poor lost lamb, and
+she called me a lot of other names, too, but she never meant no harm
+by it. She put me in them new clothes again, and I couldn’t do nothing
+but sweat and sweat, and feel all cramped up. Well, then, the old
+thing commenced again. The widow rung a bell for supper, and you
+had to come to time. When you got to the table you couldn’t go
+right to eating, but you had to wait for the widow to tuck down her
+head and grumble a little over the victuals, though there warn’t really
+anything the matter with them,—that is, nothing only everything
+was cooked by itself. In a barrel of odds and ends it is different;
+things get mixed up, and the juice kind of swaps around, and the
+things go better.
+After supper she got out her book and learned me about Moses and
+the Bulrushers, and I was in a sweat to find out all about him; but by
+and by she let it out that Moses had been dead a considerable long
+time; so then I didn’t care no more about him, because I don’t take
+no stock in dead people.
+Pretty soon I wanted to smoke, and asked the widow to let me. But
+she wouldn’t. She said it was a mean practice and wasn’t clean, and I
+must try to not do it any more. That is just the way with some people.
+They get down on a thing when they don’t know nothing about it.
+Here she was a-bothering about Moses, which was no kin to her, and
+no use to anybody, being gone, you see, yet finding a power of fault
+with me for doing a thing that had some good in it. And she took
+snuff, too; of course that was all right, because she done it herself.
+Her sister, Miss Watson, a tolerable slim old maid, with goggles on,
+HUCKLEBERRY FINN
+2
+had just come to live with her, and took a set at me now with a
+spelling-book. She worked me middling hard for about an hour, and
+then the widow made her ease up. I couldn’t stood it much longer.
+Then for an hour it was deadly dull, and I was fidgety. Miss Watson
+would say, “Don’t put your feet up there, Huckleberry;” and “Don’t
+scrunch up like that, Huckleberry—set up straight;” and pretty soon
+she would say, “Don’t gap and stretch like that, Huckleberry—why
+don’t you try to behave?” Then she told me all about the bad place,
+and I said I wished I was there. She got mad then, but I didn’t mean
+no harm. All I wanted was to go somewheres; all I wanted was a
+change, I warn’t particular. She said it was wicked to say what I said;
+said she wouldn’t say it for the whole world; she was going to live so
+as to go to the good place. Well, I couldn’t see no advantage in going
+where she was going, so I made up my mind I wouldn’t try for it. But
+I never said so, because it would only make trouble, and wouldn’t do
+no good.
+Now she had got a start, and she went on and told me all about the
+good place. She said all a body would have to do there was to go
+around all day long with a harp and sing, forever and ever. So I didn’t
+think much of it. But I never said so. I asked her if she reckoned Tom
+Sawyer would go there, and she said not by a considerable sight. I
+was glad about that, because I wanted him and me to be together.
+Miss Watson she kept pecking at me, and it got tiresome and lonesome.
+By and by they fetched the niggers in and had prayers, and
+then everybody was off to bed. I went up to my room with a piece of
+candle, and put it on the table. Then I set down in a chair by the
+window and tried to think of something cheerful, but it warn’t no
+use. I felt so lonesome I most wished I was dead. The stars were shining,
+and the leaves rustled in the woods ever so mournful; and I
+heard an owl, away off, who-whooing about somebody that was
+dead, and a whippowill and a dog crying about somebody that was
+going to die; and the wind was trying to whisper something to me,
+and I couldn’t make out what it was, and so it made the cold shivers
+run over me. Then away out in the woods I heard that kind of a
+sound that a ghost makes when it wants to tell about something
+that’s on its mind and can’t make itself understood, and so can’t rest
+HUCKLEBERRY FINN
+3
+easy in its grave, and has to go about that way every night grieving. I
+got so down-hearted and scared I did wish I had some company.
+Pretty soon a spider went crawling up my shoulder, and I flipped it
+off and it lit in the candle; and before I could budge it was all shriveled
+up. I didn’t need anybody to tell me that that was an awful bad
+sign and would fetch me some bad luck, so I was scared and most
+shook the clothes off of me. I got up and turned around in my tracks
+three times and crossed my breast every time; and then I tied up a little
+lock of my hair with a thread to keep witches away. But I hadn’t
+no confidence. You do that when you’ve lost a horseshoe that you’ve
+found, instead of nailing it up over the door, but I hadn’t ever heard
+anybody say it was any way to keep off bad luck when you’d killed a
+spider.
+I set down again, a-shaking all over, and got out my pipe for a
+smoke; for the house was all as still as death now, and so the widow
+wouldn’t know. Well, after a long time I heard the clock away off in
+the town go boom—boom—boom—twelve licks; and all still
+again—stiller than ever. Pretty soon I heard a twig snap down in the
+dark amongst the trees—something was a stirring. I set still and listened.
+Directly I could just barely hear a “me-yow! me-yow!” down
+there. That was good! Says I, “me-yow! me-yow!” as soft as I could,
+and then I put out the light and scrambled out of the window on to
+the shed. Then I slipped down to the ground and crawled in among
+the trees, and, sure enough, there was Tom Sawyer waiting for me."
+
+```
+
+###MARK TWAIN - The Adventures of Huckleberry Finn (CHAPTER 1)
+```{r echo=FALSE}
+get_results(hf)
+```
+```{r echo=FALSE}
+eminem = "[Intro (Obie Trice)]
+Obie Trice/Real Name No Gimmicks
+
+[2x]
+two trailer park girls go 'round the outside, 'round the outside, 'round the outside
+
+Guess who's back, back again
+Shady's back, tell a friend
+Guess who's back,
+guess who's back,
+guess who's back,
+guess who's back
+guess who's back
+Guess who's back...
+
+[Verse 1]
+I've created a monster, 'cause nobody wants to
+see Marshall no more they want Shady I'm chopped liver
+well if you want Shady, this is what I'll give ya
+a little bit of weed mixed with some hard liquor
+some vodka that'll jumpstart my heart quicker than a
+shock when I get shocked at the hospital by the doctor when I'm not cooperating
+when I'm rocking the table while he's operating (hey!)
+you waited this long now stop debating 'cause I'm back,
+I'm on the rag and ovulating
+I know that you got a job Ms. Cheney but your husband's heart problem's complicating
+So the FCC won't let me be or let me be me so let me see
+they tried to shut me down on MTV but it feels so empty without me
+So come on dip, bum on your lips fuck that,
+cum on your lips and some on your tits and get ready 'cause this shit's about to get heavy
+I just settled all my lawsuits
+FUCK YOU, DEBBIE!
+
+[Chorus 2x:]
+Now this looks like a job for me so everybody just follow me
+'Cause we need a little controversy,
+'Cause it feels so empty without me
+
+[Verse 2]
+Little hellions kids feeling rebellious
+embarrassed, their parents still listen to Elvis
+they start feeling like prisoners, helpless,
+'til someone comes along on a mission and yells bitch
+A visionary, vision is scary, could start a revolution, polluting the air waves a rebel
+so just let me revel and bask, in the fact that I got everyone kissing my ass
+and it's a disaster such a catastrophe for you to see so damn much of my ass you ask for me?
+Well I'm back [batman sound]
+fix your bent antennae tune it in and then I'm gonna
+enter in and up under your skin like a splinter
+The center of attention back for the winter
+I'm interesting, the best thing since wrestling
+Infesting in your kids ears and nesting
+Testing Attention Please
+feel the tension soon as someone mentions me
+here's my 10 cents my 2 cents is free
+A nuisance, who sent, you sent for me?
+
+[Chorus 2x]
+
+[Verse 3]
+A tisk-it a task-it, I'll go tit for tat with anybody who's talking this shit, that shit.
+Chris Kirkpatrick you can get your ass kicked
+worse than them little Limp Bizkit bastards, and Moby
+you can get stomped by Obie, you 36 year old bald headed fag blow me
+You don't know me, you're too old let go it's over, nobody listens to techno
+Now let's go, just give me the signal I'll be there with a whole list full of new insults
+I've been dope, suspenseful with a pencil ever since
+Prince turned himself into a symbol
+But sometimes the shit just seems, everybody only wants to discuss me
+So this must mean I'm disgusting, but it's just me I'm just obscene
+Though I'm not the first king of controversy
+I am the worst thing since Elvis Presley, to do Black Music so selfishly
+and use it to get myself wealthy (Hey)
+there's a concept that works
+20 million other white rappers emerge
+but no matter how many fish in the sea it'd be so empty without me
+"
+```
+
+
+
+
+
+###EMINEM - "Without Me" (Lyrics)
+
+```{r echo=FALSE}
+get_results(eminem)
+```
+
+Formally speaking, if:
+
+N - the number of elements (word tokens)
+r - their rank
+s - the value of the exponent characterizing the distribution
+Zipf's law then let's us predict that out of this bag of N elements, the frequency of elements of rank k, f(r;s,N), is:
+
+$$\displaystyle f(r;s,N)={\frac {1/r^{s}}{\sum \limits _{n=1}^{N}(1/n^{s})}}$$
+For s = 1, we are in the case of the simplest Zipf distribution (which is in substance a discrete case of the continuous Pareto distribution). This stated, this distribution follows then a very nice Pareto principle: The Pareto 20/80 Principle:
+
+"20 percent of the causes are responsible for 80 percent of the outcomes..."
+
+As in words, where nearly 20% of the words, account for the 80% of word occurrences. It can be claimed,since we have a huge dataset of proves we can refer to, such as books, magazines, articles, the entire Wikipedia and more and more of examples showing us this trend. But, the origins still remain a mystery, we always have that big 'why?' inside us. 
+
+People are curious, as we know, and the curiosity has made the Zipf's theorem not popular only in language and vocabulary though. Nowadays we have a vast number of phenomena who seem to follow Zipf's distribution, for as strange as it may seem. Zipfian (or near-Zipfian) frequency distributions occur in music, they are observed in computer systems in the distribution of hardware instructions for programming languages, in . Moreover, they are observed in populations of cities, the popularity of chess moves, the number of people that die in wars, the rate at which we forget! It seems like, after all, we live in a (nearly) zipfian world..!
+
+
+
+
+### Another example showing as Zipf's law applies to population of cities in countries (USA taken as example).
+
+
+```{r}
+cities=c("01. New York", "02. Los Angeles", "03. Chicago", "04. Houston", "05. Philadelphia", "06. Phoenix", "07. San Antonio", "08. San Diego", "09. Dallas", "10. San Jose")
+population=c(8491079, 3928864, 2722389, 2239558, 1560297, 1537058, 1436697, 1381069, 1381069, 1015785)
+
+d=data.frame(population, cities)
+plot(d$cities, d$population, xaxt="n", ylab="Population", type="l")
+axis(1, at=1:10, labels=d$cities, las = 2, cex.axis = 0.8)
+```
+
+
+
+
